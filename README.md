@@ -2,7 +2,9 @@
 
 基于全局文档上下文与多阶段推理的下一代 Agent 框架
 
-![Fat-Cat Framework](framework.png)
+<p align="center">
+  <img src="image.png" alt="Fat-Cat Framework" width="800">
+</p>
 
 ## 1. 背景与痛点：为什么我们需要 Fat-Cat？
 
@@ -95,7 +97,9 @@ Watcher_Agent 是一个独立运行的守护进程。它不参与具体任务，
 
 ## 4. 架构详解与目录结构
 
-![Fat-Cat Architecture](framework.png)
+<p align="center">
+  <img src="image.png" alt="Fat-Cat Architecture" width="800">
+</p>
 
 ```bash
 Fat-Cat/
