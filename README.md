@@ -1,101 +1,101 @@
 # Fat-Cat: The LLM-Native Operating System
 
-基于全局文档上下文与多阶段推理的下一代 Agent 框架
+A next-generation Agent framework based on global document context and multi-stage reasoning
 
 <p align="center">
   <img src="image.png" alt="Fat-Cat Framework" width="800">
 </p>
 
-## 1. 背景与痛点：为什么我们需要 Fat-Cat？
+## 1. Background & Pain Points: Why Do We Need Fat-Cat?
 
-在当前的 LLM Agent 开发范式中，工程师们正面临着"上下文管理的泥潭"与"脆弱的控制流"两大核心挑战。我将这些挑战总结为 Agent 设计的三大原罪：
+In the current LLM Agent development paradigm, engineers are facing two core challenges: "the quagmire of context management" and "fragile control flow". I summarize these challenges as the three original sins of Agent design:
 
-### 痛点一：JSON 上下文的诅咒 (The JSON Trap)
+### Pain Point One: The JSON Trap
 
-传统的 Agent 框架（如 LangChain 早期模式或 Assistant API）倾向于通过复杂的 JSON 对象或 list 字典来传递状态。
+Traditional Agent frameworks (such as early LangChain patterns or Assistant API) tend to pass state through complex JSON objects or list dictionaries.
 
-**问题：** LLM 本质上是基于文本（Text-based）训练的。强制模型去解析深层嵌套的 JSON 状态会导致注意力分散（Attention Dilution），模型往往只见树木不见森林，容易遗漏关键约束。
+**Problem:** LLMs are essentially trained on text. Forcing models to parse deeply nested JSON states leads to attention dilution—models often see the trees but miss the forest, easily overlooking critical constraints.
 
-**工程师的噩梦：** 调试时面对的是数千行的 JSON dump，难以直观理解 Agent 到底"想"什么。
+**Engineer's Nightmare:** When debugging, facing thousands of lines of JSON dumps makes it difficult to intuitively understand what the Agent is actually "thinking".
 
-### 痛点二：静态能力的局限 (The Static Toolset)
+### Pain Point Two: The Static Toolset
 
-大多数 Agent 的能力是"硬编码"的。当面对未知问题时，Agent 只能在预设的 if-else 或固定 DAG 图中打转。它们缺乏**运行时学习（Runtime Learning）**的能力，无法像人类一样通过查阅资料获得新技能。
+Most Agents have "hard-coded" capabilities. When facing unknown problems, Agents can only operate within preset if-else statements or fixed DAG graphs. They lack the ability for **Runtime Learning** and cannot acquire new skills by consulting resources like humans do.
 
-### 痛点三：元认知的缺失 (The Absence of Metacognition)
+### Pain Point Three: The Absence of Metacognition
 
-这是当前 Agent 最致命的弱点——"只有执行，没有反思"。
+This is the most fatal weakness of current Agents—"only execution, no reflection".
 
-**现象：** 传统 Agent 接到任务就像一个莽撞的实习生，直接开始调用工具。一旦进入死胡同（如代码报错、搜索无果），它们往往会陷入死循环重试，或者产生幻觉（Hallucination）强行给出错误答案。
+**Phenomenon:** Traditional Agents receiving tasks act like reckless interns, directly starting to call tools. Once they hit a dead end (such as code errors or failed searches), they often fall into infinite retry loops or generate hallucinations, forcibly providing wrong answers.
 
-**缺失环节：** 缺乏一个高阶的"监视器"进程来评估："我现在做得对吗？"、"我现有的策略能解决这个问题吗？"、"我是不是需要停下来重新规划？"。
+**Missing Link:** Lack of a high-level "monitor" process to evaluate: "Am I doing this correctly?", "Can my current strategy solve this problem?", "Do I need to stop and replan?".
 
-Fat-Cat 旨在解决上述问题，它不只是一个执行任务的 Bot，而是一个拥有"自我意识"和"进化能力"的操作系统雏形。
+Fat-Cat aims to solve the above problems. It is not just a Bot that executes tasks, but an operating system prototype with "self-awareness" and "evolutionary capabilities".
 
-## 2. 核心设计哲学
+## 2. Core Design Philosophy
 
-### 2.1 LLM as Operating System (LLM 即操作系统)
+### 2.1 LLM as Operating System
 
-在 Fat-Cat 中，我们将 LLM 视为 CPU，将Context（文档上下文）视为内存（RAM），将外部工具视为外设（I/O）。
+In Fat-Cat, we treat LLM as CPU, Context (document context) as memory (RAM), and external tools as peripherals (I/O).
 
-Fat-Cat 框架本身充当 Kernel（内核），负责进程调度（Stage 切换）、内存管理（Memory Bridge）和异常处理（Watcher Agent）。
+The Fat-Cat framework itself acts as the Kernel, responsible for process scheduling (Stage switching), memory management (Memory Bridge), and exception handling (Watcher Agent).
 
-### 2.2 Document as Global Context (文档即全局总线)
+### 2.2 Document as Global Context
 
-我们摒弃了碎片化的 JSON，采用 Markdown 文档 作为全局状态的载体。每一个 Stage 的输出，都是对这份全局文档的一次"修订"或"增补"。
+We abandon fragmented JSON and adopt Markdown documents as carriers of global state. Each Stage's output is a "revision" or "supplement" to this global document.
 
-- Stage 1 生成 reasoner.md（问题分析书）
-- Stage 2 生成 strategy.md（战术手册）
-- Stage 3 生成 step.md（SOP 执行表）
-- Stage 4 执行并回填结果。
+- Stage 1 generates reasoner.md (problem analysis document)
+- Stage 2 generates strategy.md (tactical manual)
+- Stage 3 generates step.md (SOP execution table)
+- Stage 4 executes and backfills results.
 
-这种设计让 Agent 的"思考过程"对人类完全可见、可调试。
+This design makes the Agent's "thinking process" completely visible and debuggable to humans.
 
-## 3. 核心特性深度解析：Fat-Cat 的元认知体系
+## 3. Core Features Deep Dive: Fat-Cat's Metacognitive System
 
-Fat-Cat 的核心突破在于构建了一个分层的元认知闭环。这不是简单的 Prompt Engineering，而是通过架构强制 Agent 进行"三思而后行"。
+Fat-Cat's core breakthrough lies in constructing a hierarchical metacognitive closed loop. This is not simple Prompt Engineering, but rather forcing Agents to "think twice before acting" through architecture.
 
-🧠 **Stage 1: Metacognitive Analysis (深度意图感知)**
+🧠 **Stage 1: Metacognitive Analysis (Deep Intent Perception)**
 
-"还没开始做，先想怎么做"
+"Think about how to do it before starting"
 
-传统的 Agent 收到 "帮我写个爬虫" 可能直接就开始写代码。但在 Fat-Cat 中，Stage 1 Agent (Metacognitive_Analysis_agnet.py) 会强制通过 reasoner.md 进行元认知分析：
+Traditional Agents receiving "help me write a crawler" might directly start writing code. But in Fat-Cat, Stage 1 Agent (Metacognitive_Analysis_agnet.py) will force metacognitive analysis through reasoner.md:
 
-- **意图拆解：** 用户是真的只要代码，还是需要部署？
-- **约束提取：** 隐含的语言、性能、依赖库要求是什么？
-- **信息完备性检查：** 如果信息不足，它会拒绝执行并要求补充，而不是瞎猜。
+- **Intent Decomposition:** Does the user really just want code, or do they need deployment?
+- **Constraint Extraction:** What are the implicit language, performance, and dependency library requirements?
+- **Information Completeness Check:** If information is insufficient, it will refuse to execute and request supplementation, rather than guessing blindly.
 
-🧭 **Stage 2: Dynamic Strategy & Metacognitive Search (元认知搜索与进化)**
+🧭 **Stage 2: Dynamic Strategy & Metacognitive Search**
 
-"知道自己不知道，并主动学习"
+"Know what you don't know, and actively learn"
 
-这是 Fat-Cat 最具创新性的模块 (stage2_capability_upgrade_agent)。
+This is Fat-Cat's most innovative module (stage2_capability_upgrade_agent).
 
-- **策略检索：** Agent 首先会在本地 strategy_library 中检索是否有类似问题的解决经验。
-- **元认知判断：** 如果检索到的策略匹配度低（例如遇到全新的框架或报错），Agent 会触发**"能力升级" (Capability Upgrade)** 信号。
-- **元认知搜索 (Metacognitive Search)：**
+- **Strategy Retrieval:** The Agent first searches the local strategy_library for similar problem-solving experiences.
+- **Metacognitive Judgment:** If the retrieved strategies have low matching scores (e.g., encountering a completely new framework or error), the Agent will trigger a **"Capability Upgrade"** signal.
+- **Metacognitive Search:**
 
-此时，Agent 会挂起当前任务，启动一个子进程去互联网（通过 Firecrawl/Tavily）进行针对性学习。它不是在搜索"答案"，而是在搜索"解决此类问题的方法论"。
+At this point, the Agent will suspend the current task and launch a subprocess to learn from the internet (via Firecrawl/Tavily). It's not searching for "answers", but rather searching for "methodologies to solve this type of problem".
 
-**例子：** 遇到一个新的 Python 库，Agent 会先去读官方文档，总结出用法，生成一个新的 Markdown 策略文件存入库中，然后再回头解决用户的问题。
+**Example:** When encountering a new Python library, the Agent will first read the official documentation, summarize usage, generate a new Markdown strategy file to store in the library, and then return to solve the user's problem.
 
-📝 **Stage 3: Logical Step Decomposition (思维链固化)**
+📝 **Stage 3: Logical Step Decomposition**
 
-"将思考固化为指令"
+"Solidify thinking into instructions"
 
-在理解了问题（Stage 1）并学会了方法（Stage 2）后，Stage 3 (Step_agent.py) 将生成一份详尽的 SOP（标准作业程序）。这不是模糊的自然语言，而是类似于伪代码的严格步骤，确保 Stage 4 的执行器不会跑偏。
+After understanding the problem (Stage 1) and learning the method (Stage 2), Stage 3 (Step_agent.py) will generate a detailed SOP (Standard Operating Procedure). This is not vague natural language, but strict steps similar to pseudocode, ensuring Stage 4's executor won't go astray.
 
-👁️ **Watcher Agent: Runtime Reflection (运行时反思)**
+👁️ **Watcher Agent: Runtime Reflection**
 
-"站在系统之外的观察者"
+"An observer standing outside the system"
 
-Watcher_Agent 是一个独立运行的守护进程。它不参与具体任务，而是像看监控一样盯着全局文档的变化。
+Watcher_Agent is an independently running daemon process. It doesn't participate in specific tasks, but monitors global document changes like watching surveillance footage.
 
-- **死循环检测：** 如果发现 Stage 4 连续三次输出同样的错误日志。
-- **目标偏离：** 如果执行结果与 Stage 1 定义的元认知目标不符。
-- **干预机制：** Watcher 有最高权限中断当前 Agent，强制回滚或请求人工介入。
+- **Infinite Loop Detection:** If Stage 4 outputs the same error log three times consecutively.
+- **Goal Deviation:** If execution results don't match the metacognitive goals defined in Stage 1.
+- **Intervention Mechanism:** Watcher has the highest authority to interrupt the current Agent, force rollback, or request human intervention.
 
-## 4. 架构详解与目录结构
+## 4. Architecture Details & Directory Structure
 
 <p align="center">
   <img src="image.png" alt="Fat-Cat Architecture" width="800">
@@ -103,72 +103,72 @@ Watcher_Agent 是一个独立运行的守护进程。它不参与具体任务，
 
 ```bash
 Fat-Cat/
-├── agents/                 # 基础 Agent 类定义
-├── ability_library/        # 核心能力定义 (Markdown 描述)
-├── strategy_library/       # [长期记忆] 策略库，存储已习得的解题思路
-├── form_templates/         # 结构化输出模板
-├── MCP/                    # [I/O 层] Model Context Protocol 工具实现
-│   ├── code_interpreter.py # 沙箱代码解释器
-│   ├── firecrawl.py        # 智能爬虫 (用于元认知搜索)
-│   └── tavily.py           # 搜索引擎
-├── Memory_system/          # [内存管理] 负责 Markdown 文档的读写流转
-├── Document_Checking/      # [内存完整性] 防止上下文丢失
-├── stage1_agent/           # [前额叶] 元认知分析：生成 reasoner.md
-├── stage2_agent/           # [调度器] 策略选择：生成 strategy.md
-├── stage2_capability_upgrade_agent/ # [进化模块] 负责元认知搜索与策略生成
-├── stage3_agent/           # [指挥官] 步骤拆解：生成 step.md
-├── stage4_agent/           # [执行器] 任务执行与工具调用
-├── Watcher_Agent/          # [看门狗] 运行时监控与异常熔断
-├── workflow/               # 流水线编排
-├── config/                 # 配置
-└── main.py                 # 入口
+├── agents/                 # Base Agent class definitions
+├── ability_library/        # Core capability definitions (Markdown descriptions)
+├── strategy_library/       # [Long-term Memory] Strategy library, storing learned problem-solving approaches
+├── form_templates/         # Structured output templates
+├── MCP/                    # [I/O Layer] Model Context Protocol tool implementations
+│   ├── code_interpreter.py # Sandboxed code interpreter
+│   ├── firecrawl.py        # Intelligent crawler (for metacognitive search)
+│   └── tavily.py           # Search engine
+├── Memory_system/          # [Memory Management] Handles Markdown document read/write flow
+├── Document_Checking/      # [Memory Integrity] Prevents context loss
+├── stage1_agent/           # [Prefrontal Cortex] Metacognitive analysis: generates reasoner.md
+├── stage2_agent/           # [Scheduler] Strategy selection: generates strategy.md
+├── stage2_capability_upgrade_agent/ # [Evolution Module] Responsible for metacognitive search and strategy generation
+├── stage3_agent/           # [Commander] Step decomposition: generates step.md
+├── stage4_agent/           # [Executor] Task execution and tool invocation
+├── Watcher_Agent/          # [Watchdog] Runtime monitoring and exception circuit breaking
+├── workflow/               # Pipeline orchestration
+├── config/                 # Configuration
+└── main.py                 # Entry point
 ```
 
-## 5. 快速开始 (Getting Started)
+## 5. Quick Start
 
-### 环境要求
+### Requirements
 
 - Python 3.10+
-- 依赖包见 requirements-full.txt
+- Dependencies listed in requirements-full.txt
 
-### 安装
+### Installation
 
 ```bash
-# 1. 克隆项目
+# 1. Clone the repository
 git clone https://github.com/your-repo/fat-cat.git
 cd fat-cat
 
-# 2. 安装依赖 (提供了一键脚本)
+# 2. Install dependencies (one-click script provided)
 python scripts/install_full_pipeline_deps.py
 ```
 
-### 配置
+### Configuration
 
-在 config/model_config.py 中配置 LLM API Key。Fat-Cat 针对长上下文模型（如 Gemini 1.5 Pro, DeepSeek V3）进行了优化，建议使用支持 32k+ Context 的模型以获得最佳体验。
+Configure LLM API Key in config/model_config.py. Fat-Cat is optimized for long-context models (such as Gemini 1.5 Pro, DeepSeek V3). It is recommended to use models supporting 32k+ Context for the best experience.
 
-### 运行
+### Running
 
 ```bash
-# 启动全流程流水线
+# Start the full pipeline
 python workflow/full_pipeline_runner.py
 ```
 
-## 6. 开发者指南：扩展与进化
+## 6. Developer Guide: Extension & Evolution
 
-Fat-Cat 是一个有生命的系统，你可以通过以下方式让它变强：
+Fat-Cat is a living system. You can make it stronger through the following methods:
 
-### 添加新工具 (MCP)
+### Adding New Tools (MCP)
 
-在 MCP/ 目录下继承 _mcp_function.py。Fat-Cat 会自动识别并将其注册到 Stage 4 的工具箱中。
+Inherit from _mcp_function.py in the MCP/ directory. Fat-Cat will automatically recognize and register it to Stage 4's toolbox.
 
-### 手动注入知识 (Strategy Injection)
+### Manual Knowledge Injection (Strategy Injection)
 
-除了让 Agent 自己上网学，你也可以直接在 strategy_library/ 中添加 Markdown 格式的技术文档。Stage 2 Agent 会立即通过 RAG 索引到这些新知识。
+In addition to letting the Agent learn online by itself, you can also directly add Markdown-formatted technical documents to strategy_library/. Stage 2 Agent will immediately index these new knowledge through RAG.
 
-### 调整元认知阈值
+### Adjusting Metacognitive Thresholds
 
-在 stage2_agent 中可以调整策略匹配的置信度阈值。阈值越高，Agent 越倾向于触发"能力升级"去搜索新知识，而不是依赖旧经验。
+In stage2_agent, you can adjust the confidence threshold for strategy matching. The higher the threshold, the more the Agent tends to trigger "capability upgrades" to search for new knowledge rather than relying on old experience.
 
-## 7. 许可证
+## 7. License
 
-[License 信息]
+[License Information]
