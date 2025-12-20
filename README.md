@@ -199,8 +199,7 @@ python scripts/install_full_pipeline_deps.py
 
 ### Configuration
 
-Configure LLM API Key in config/model_config.py. Fat-Cat is optimized for long-context models (such as Gemini 1.5 Pro, DeepSeek V3). It is recommended to use models supporting 32k+ Context for the best experience.
-
+Configure LLM API Key in config/model_config.py. 
 ### Running
 
 ```bash
