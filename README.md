@@ -18,17 +18,23 @@ Traditional Agent frameworks (such as early LangChain patterns or Assistant API)
 
 **Engineer's Nightmare:** When debugging, facing thousands of lines of JSON dumps makes it difficult to intuitively understand what the Agent is actually "thinking".
 
-### Pain Point Two: The Static Toolset
+### Pain Point Two: The Ephemeral Knowledge Trap
 
-Most Agents have "hard-coded" capabilities. When facing unknown problems, Agents can only operate within preset if-else statements or fixed DAG graphs. They lack the ability for **Runtime Learning** and cannot acquire new skills by consulting resources like humans do.
+While modern Agent frameworks (like LangGraph, AutoGen, CrewAI) support dynamic tool calling and multi-agent collaboration, they suffer from a critical flaw: **Knowledge Amnesia**. Each task execution is an isolated event—lessons learned, successful strategies, and domain insights evaporate once the session ends.
 
-### Pain Point Three: The Absence of Metacognition
+**The Problem:** When an Agent successfully solves a complex task (e.g., debugging a specific library error), this hard-won experience is never preserved. The next time a similar problem arises, the Agent starts from scratch, wasting tokens, time, and potentially making the same mistakes.
 
-This is the most fatal weakness of current Agents—"only execution, no reflection".
+**What's Missing:** A persistent **Strategy Library** that accumulates problem-solving methodologies over time. Unlike humans who build expertise through experience, current Agents remain perpetual beginners—capable but never growing wiser.
 
-**Phenomenon:** Traditional Agents receiving tasks act like reckless interns, directly starting to call tools. Once they hit a dead end (such as code errors or failed searches), they often fall into infinite retry loops or generate hallucinations, forcibly providing wrong answers.
+### Pain Point Three: The Black-Box Execution Crisis
 
-**Missing Link:** Lack of a high-level "monitor" process to evaluate: "Am I doing this correctly?", "Can my current strategy solve this problem?", "Do I need to stop and replan?".
+Modern Agents can call tools and execute multi-step plans, but their decision-making process remains opaque. When things go wrong, engineers face an impossible debugging challenge.
+
+**The Problem:** Current frameworks lack **Runtime Observability**. There's no structured way to understand: Why did the Agent choose this strategy? What information led to that decision? Where exactly did the reasoning break down?
+
+**The Consequence:** When an Agent fails or produces incorrect results, you're left with cryptic logs and fragmented state. The absence of a unified, human-readable execution trace makes it nearly impossible to diagnose issues, improve prompts, or trust the Agent with critical tasks.
+
+**What's Missing:** A **Document-Centric Audit Trail** where every stage of reasoning, strategy selection, and execution is recorded in a readable format—making Agent behavior transparent, debuggable, and auditable.
 
 Fat-Cat aims to solve the above problems. It is not just a Bot that executes tasks, but an operating system prototype with "self-awareness" and "evolutionary capabilities".
 
@@ -199,7 +205,8 @@ python scripts/install_full_pipeline_deps.py
 
 ### Configuration
 
-Configure LLM API Key in config/model_config.py. 
+Configure LLM API Key in config/model_config.py. Fat-Cat is optimized for long-context models (such as Kimi-K2). It is recommended to use models supporting 32k+ Context for the best experience.
+
 ### Running
 
 ```bash
