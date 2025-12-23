@@ -52,6 +52,7 @@ from Memory_system.memory_bridge import (
     create_stage3_context,
     create_stage4_context,
 )
+from workflow.document_orchestrator import DocumentOrchestrator
 
 
 LOGGER = logging.getLogger(__name__)
@@ -158,29 +159,35 @@ class FullPipelineRunner:
     ) -> dict[str, Any]:
         resolved_tool_catalog = self._resolve_tool_catalog(tool_catalog)
         document_path = self._prepare_finish_form_document(objective, context_snapshot, resolved_tool_catalog)
+        
+        orchestrator = DocumentOrchestrator(document_path, encoding=self._encoding)
 
-        stage1_text = await self._run_stage1(document_path, objective=objective)
+        stage1_text = await self._run_stage1(document_path, orchestrator, objective=objective)
 
         stage2_candidate_text = await self._run_stage2_candidate(
             document_path,
+            orchestrator,
             objective=objective,
             candidate_limit=candidate_limit,
         )
 
         stage2_selection_text = await self._run_stage2_selection(
             document_path,
+            orchestrator,
             objective=objective,
         )
 
-        stage2_upgrade_text = await self._run_stage2_upgrade(document_path)
+        stage2_upgrade_text = await self._run_stage2_upgrade(document_path, orchestrator)
 
-        stage3_text = await self._run_stage3(document_path, objective=objective)
+        stage3_text = await self._run_stage3(document_path, orchestrator, objective=objective)
 
-        stage4_text = await self._run_stage4(document_path, objective=objective)
+        stage4_text = await self._run_stage4(document_path, orchestrator, objective=objective)
 
         watcher_audit_text = MemoryBridge.load_stage_output(document_path, "WATCHER_AUDIT") or None
 
         capability_upgrade_text = await self._run_capability_upgrade(document_path)
+
+        orchestrator.finalize_document()
 
         return {
             "document": self._relativize(document_path),
@@ -233,34 +240,26 @@ class FullPipelineRunner:
         content = document_path.read_text(encoding=self._encoding)
         updated = False
 
-        objective_marker_start = "<!-- EXTERNAL_OBJECTIVE_START -->"
-        objective_marker_end = "<!-- EXTERNAL_OBJECTIVE_END -->"
-        if objective_marker_start in content and objective_marker_end in content:
-            start_idx = content.find(objective_marker_start) + len(objective_marker_start)
-            end_idx = content.find(objective_marker_end)
-            new_content = f"\n{objective}\n"
-            content = content[:start_idx] + new_content + content[end_idx:]
-            updated = True
-
-        context_marker_start = "<!-- EXTERNAL_CONTEXT_START -->"
-        context_marker_end = "<!-- EXTERNAL_CONTEXT_END -->"
-        if context_marker_start in content and context_marker_end in content:
-            start_idx = content.find(context_marker_start) + len(context_marker_start)
-            end_idx = content.find(context_marker_end)
-            new_content = f"\n{context_snapshot or ''}\n"
-            content = content[:start_idx] + new_content + content[end_idx:]
-            updated = True
-
-        tool_marker_start = "<!-- EXTERNAL_TOOL_CATALOG_START -->"
-        tool_marker_end = "<!-- EXTERNAL_TOOL_CATALOG_END -->"
-        if tool_marker_start in content and tool_marker_end in content:
-            start_idx = content.find(tool_marker_start) + len(tool_marker_start)
-            end_idx = content.find(tool_marker_end)
+        marker_start = "<!-- EXTERNAL_INFO_START -->"
+        marker_end = "<!-- EXTERNAL_INFO_END -->"
+        if marker_start in content and marker_end in content:
+            start_idx = content.find(marker_start) + len(marker_start)
+            end_idx = content.find(marker_end)
+            
+            external_info = []
+            external_info.append(f"### 任务目标\n\n{objective}\n")
+            
+            if context_snapshot:
+                external_info.append(f"### 外部上下文\n\n{context_snapshot}\n")
+            else:
+                external_info.append("### 外部上下文\n\n")
+            
+            external_info.append("### 可用工具清单\n")
             if tool_catalog:
                 tool_list = "\n".join(f"- {tool}" for tool in tool_catalog)
-                new_content = f"\n{tool_list}\n"
-            else:
-                new_content = "\n"
+                external_info.append(f"{tool_list}\n")
+            
+            new_content = "\n" + "\n".join(external_info)
             content = content[:start_idx] + new_content + content[end_idx:]
             updated = True
 
@@ -285,6 +284,7 @@ class FullPipelineRunner:
     async def _run_stage1(
         self,
         document_path: Path,
+        orchestrator: DocumentOrchestrator,
         *,
         objective: str,
     ) -> str:
@@ -295,17 +295,19 @@ class FullPipelineRunner:
         try:
             result_text = await self._stage1_agent.analyze_text(
                 context=context_block,
-                finish_form_path=str(document_path),
             )
         except Exception as exc:
             self._log_stage_exception("阶段一代理执行失败", exc)
             raise
 
-        return self._normalize_stage_output(result_text)
+        normalized = self._normalize_stage_output(result_text)
+        orchestrator.register_stage_output('stage1', normalized)
+        return normalized
 
     async def _run_stage2_candidate(
         self,
         document_path: Path,
+        orchestrator: DocumentOrchestrator,
         *,
         objective: str,
         candidate_limit: int | None,
@@ -322,18 +324,20 @@ class FullPipelineRunner:
         try:
             result_text = await self._candidate_agent.analyze_text(
                 context=context,
-                finish_form_path=str(document_path),
                 **kwargs,
             )
         except Exception as exc:
             self._log_stage_exception("阶段二-A 候选策略生成失败", exc)
             raise
 
-        return self._normalize_stage_output(result_text)
+        normalized = self._normalize_stage_output(result_text)
+        orchestrator.register_stage_output('stage2_candidate', normalized)
+        return normalized
 
     async def _run_stage2_selection(
         self,
         document_path: Path,
+        orchestrator: DocumentOrchestrator,
         *,
         objective: str,
     ) -> str:
@@ -346,7 +350,9 @@ class FullPipelineRunner:
             self._log_stage_exception("阶段二-B 策略遴选失败", exc)
             raise
 
-        return self._normalize_stage_output(result_text)
+        normalized = self._normalize_stage_output(result_text)
+        orchestrator.register_stage_output('stage2_selection', normalized)
+        return normalized
 
     async def _run_stage2_selection_with_retries(
         self,
@@ -364,7 +370,6 @@ class FullPipelineRunner:
             try:
                 return await self._stage2_agent.analyze_text(
                     context=context,
-                    finish_form_path=str(document_path),
                 )
             except httpx.HTTPError as exc:
                 retries += 1
@@ -379,7 +384,7 @@ class FullPipelineRunner:
                 )
                 await asyncio.sleep(self._stage2_selection_retry_delay)
 
-    async def _run_stage2_upgrade(self, document_path: Path) -> str | None:
+    async def _run_stage2_upgrade(self, document_path: Path, orchestrator: DocumentOrchestrator) -> str | None:
         context = create_stage2b_context(
             finish_form_path=str(document_path),
             objective="",
@@ -387,18 +392,20 @@ class FullPipelineRunner:
         try:
             result_text = await self._stage2_upgrade_agent.evaluate_text(
                 context=context,
-                finish_form_path=str(document_path),
             )
         except Exception as exc:
             self._log_stage_exception("阶段二-C 策略库升级代理执行失败", exc)
             raise
 
-        body = self._normalize_stage_output(result_text).strip()
-        return body or None
+        normalized = self._normalize_stage_output(result_text).strip() or None
+        if normalized:
+            orchestrator.register_stage_output('stage2_upgrade', normalized)
+        return normalized
 
     async def _run_stage3(
         self,
         document_path: Path,
+        orchestrator: DocumentOrchestrator,
         *,
         objective: str,
     ) -> str:
@@ -410,17 +417,19 @@ class FullPipelineRunner:
         try:
             result_text = await self._stage3_agent.analyze_text(
                 context=context,
-                finish_form_path=str(document_path),
             )
         except Exception as exc:
             self._log_stage_exception("阶段三执行规划代理执行失败", exc)
             raise
 
-        return self._normalize_stage_output(result_text)
+        normalized = self._normalize_stage_output(result_text)
+        orchestrator.register_stage_output('stage3', normalized)
+        return normalized
 
     async def _run_stage4(
         self,
         document_path: Path,
+        orchestrator: DocumentOrchestrator,
         *,
         objective: str,
     ) -> str:
@@ -432,16 +441,18 @@ class FullPipelineRunner:
         try:
             result_text = await self._stage4_agent.analyze_text(
                 context=context,
-                finish_form_path=str(document_path),
                 enable_tool_loop=True,
                 tools_bridge=self._tools_bridge,
                 watcher_agent=self._watcher_agent,
+                orchestrator=orchestrator,
             )
         except Exception as exc:
             self._log_stage_exception("阶段四执行记录代理执行失败", exc)
             raise
 
-        return self._normalize_stage_output(result_text)
+        normalized = self._normalize_stage_output(result_text)
+        orchestrator.register_stage_output('stage4', normalized)
+        return normalized
 
     async def _run_capability_upgrade(self, document_path: Path) -> str | None:
         context = create_stage1_context(
