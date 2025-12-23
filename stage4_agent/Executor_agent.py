@@ -22,6 +22,7 @@ from workflow.finish_form_utils import (
     update_form_section,
     read_form_section,
 )
+from workflow.document_orchestrator import DocumentOrchestrator
 from stage4_agent.tools_bridge import ToolsBridge, ToolResult
 from _logging import logger as LOGGER
 
@@ -61,7 +62,7 @@ class Stage4ExecutorAgent(BaseAgent):
         tools_bridge: ToolsBridge | None = None,
         watcher_agent: Any | None = None,
         enable_tool_loop: bool = False,
-        finish_form_path: str | None = None,
+        orchestrator: DocumentOrchestrator | None = None,
         **kwargs: Any,
     ) -> ChatResponse | AsyncGenerator[ChatResponse, None]:
         objective = self._extract_section(context, "Objective")
@@ -71,8 +72,9 @@ class Stage4ExecutorAgent(BaseAgent):
         if self._system_prompt:
             messages.append({"role": "system", "content": self._system_prompt})
 
-        if enable_tool_loop and tools_bridge and finish_form_path:
+        if enable_tool_loop and tools_bridge and orchestrator:
             execution_plan = self._extract_section(context, "Stage 3 Execution Plan")
+            finish_form_path = str(orchestrator.document_path)
             self._init_live_plan(finish_form_path, execution_plan, objective)
             final_response_text = await self._run_live_document_loop(
                 messages=messages,
@@ -82,6 +84,7 @@ class Stage4ExecutorAgent(BaseAgent):
                 objective=objective,
                 context_snapshot=context_snapshot,
                 finish_form_path=finish_form_path,
+                orchestrator=orchestrator,
                 **kwargs,
             )
         else:
@@ -142,6 +145,7 @@ class Stage4ExecutorAgent(BaseAgent):
         objective: str | None,
         context_snapshot: str | None,
         finish_form_path: str,
+        orchestrator: DocumentOrchestrator | None = None,
         **kwargs: Any,
     ) -> str:
         iteration = 0
@@ -199,14 +203,23 @@ class Stage4ExecutorAgent(BaseAgent):
                 result_text = self._format_tool_result(call, result)
                 messages.append({"role": "user", "content": result_text})
 
-                self._append_tool_log(
-                    finish_form_path,
-                    iteration=iteration,
-                    tool_name=tool_name,
-                    tool_args=tool_args,
-                    tool_output=result.output,
-                    tool_error=result.error,
-                )
+                if orchestrator:
+                    orchestrator.register_tool_call(
+                        iteration=iteration,
+                        tool_name=tool_name,
+                        tool_args=tool_args,
+                        tool_output=result.output,
+                        tool_error=result.error,
+                    )
+                else:
+                    self._append_tool_log(
+                        finish_form_path,
+                        iteration=iteration,
+                        tool_name=tool_name,
+                        tool_args=tool_args,
+                        tool_output=result.output,
+                        tool_error=result.error,
+                    )
 
                 if watcher_agent:
                     try:
@@ -366,10 +379,6 @@ Execute the next step by outputting a [TOOL_CALL] block, or output Final Answer 
         )
 
     async def analyze_text(self, **kwargs: Any) -> str:
-        finish_form_path = kwargs.get("finish_form_path")
-        kwargs.pop("finish_form_marker", None)
-        kwargs.pop("finish_form_header", None)
-
         response = await self.analyze(**kwargs)
 
         if inspect.isasyncgen(response):
@@ -380,30 +389,7 @@ Execute the next step by outputting a [TOOL_CALL] block, or output Final Answer 
         else:
             result_text = self._extract_text(response)
 
-        if finish_form_path:
-            self._write_finish_form(
-                finish_form_path,
-                result_text,
-                marker="STAGE4_FINAL_ANSWER",
-                header="### 3. Final Answer to User",
-            )
-
         return result_text
-
-    @staticmethod
-    def _write_finish_form(
-        finish_form_path: str | Path,
-        content: str,
-        *,
-        marker: str,
-        header: str,
-    ) -> None:
-        update_form_section(
-            finish_form_path,
-            marker_name=marker,
-            content=content,
-            header=header,
-        )
 
 
 __all__ = [
