@@ -213,31 +213,6 @@ def _replace_between_markers(content: str, markers: tuple[str, str], body: str) 
     return content[:start_idx] + replacement + content[end_idx:]
 
 
-def _ensure_stage2c_markers(content: str) -> str:
-    """Inject Stage 2C analysis markers when missing."""
-
-    if STAGE2C_MARKERS[0] in content and STAGE2C_MARKERS[1] in content:
-        return content
-
-    header_pattern = re.compile(
-        r"(## 阶段二-C：能力升级评估（Stage2_Capability_Upgrade_agent）.*?\n)(.*?)"
-        r"(### 1\. 能力缺口诊断)",
-        re.DOTALL,
-    )
-    match = header_pattern.search(content)
-    if not match:
-        return content
-
-    insertion_block = (
-        f"{match.group(1)}{match.group(2)}"
-        "### 阶段原文记录（阶段二-C）\n\n"
-        f"{STAGE2C_MARKERS[0]}\n`待填写`\n{STAGE2C_MARKERS[1]}\n\n"
-        f"{match.group(3)}"
-    )
-    updated = content[: match.start()] + insertion_block + content[match.end() :]
-    return updated
-
-
 def _parse_objective(content: str) -> str | None:
     pattern = re.compile(r"- \*\*目标概述\*\*：(?P<value>.*)")
     match = pattern.search(content)
@@ -279,9 +254,8 @@ async def _run_pipeline(args: argparse.Namespace) -> None:
 
     finish_form_path = _load_finish_form(Path(args.finish_form).expanduser() if args.finish_form else None, finish_dir)
     finish_content = _read_text(finish_form_path)
-    finish_content = _ensure_stage2c_markers(finish_content)
     if STAGE2C_MARKERS[0] not in finish_content or STAGE2C_MARKERS[1] not in finish_content:
-        raise ValueError("无法在 finish_form 文档中找到或插入阶段二-C 的标记，请检查模板。")
+        raise ValueError("无法在 finish_form 文档中找到阶段二-C 的标记，请检查模板。")
 
     stage1_text = _validate_stage1(_extract_between_markers(finish_content, STAGE1_MARKERS))
     objective = args.objective or _parse_objective(finish_content)
@@ -397,7 +371,7 @@ def main() -> None:
     except KeyboardInterrupt:
         print("\n已中断。")
     except Exception as exc:  # pylint: disable=broad-except
-        print(f"\n❌ 出现错误：{exc}")
+        print(f"\n出现错误：{exc}")
 
 
 if __name__ == "__main__":
