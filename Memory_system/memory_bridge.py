@@ -161,31 +161,26 @@ def _load_anchor_sections(finish_form_path: str | Path) -> dict[str, str]:
 
 
 EXTERNAL_SECTION_DESCRIPTORS = [
+    ("EXTERNAL_INFO", "External Information", "external_input"),
     ("EXTERNAL_OBJECTIVE", "Task Objective", "external_input"),
     ("EXTERNAL_CONTEXT", "External Context", "external_input"),
     ("EXTERNAL_TOOL_CATALOG", "Available Tools", "external_input"),
 ]
 
 STAGE1_SECTION_DESCRIPTORS = [
-    ("STAGE1_EXECUTIVE_SUMMARY", "Executive Summary", "stage1_agent"),
-    ("STAGE1_CAPABILITY_INVENTORY", "Capability Inventory", "stage1_agent"),
-    ("STAGE1_FAILURE_MODES", "Common Failure Modes", "stage1_agent"),
-    ("STAGE1_RISKS_BOUNDARY", "Risks & Knowledge Boundary", "stage1_agent"),
+    ("STAGE1_ANALYSIS", "Stage 1 Analysis", "stage1_agent"),
 ]
 
 STAGE2A_SECTION_DESCRIPTORS = [
-    ("STAGE2A_STRATEGY_CATALOG", "Candidate Strategy Catalog", "stage2a_agent"),
-    ("STAGE2A_NOTES", "Notes for Stage 2-B", "stage2a_agent"),
+    ("STAGE2A_ANALYSIS", "Stage 2-A Analysis", "stage2a_agent"),
 ]
 
 STAGE2B_SECTION_DESCRIPTORS = [
-    ("STAGE2B_STRATEGY_SNAPSHOT", "Final Strategy Snapshot", "stage2b_agent"),
-    ("STAGE2B_HANDOVER_NOTES", "Handover Notes for Stage 3", "stage2b_agent"),
+    ("STAGE2B_ANALYSIS", "Stage 2-B Analysis", "stage2b_agent"),
 ]
 
 STAGE3_SECTION_DESCRIPTORS = [
-    ("STAGE3_EXECUTION_PLAN", "Execution Plan Overview", "stage3_agent"),
-    ("STAGE3_NOTES", "Notes for Executor", "stage3_agent"),
+    ("STAGE3_PLAN", "Stage 3 Plan", "stage3_agent"),
 ]
 
 STAGE4_SECTION_DESCRIPTORS = [
