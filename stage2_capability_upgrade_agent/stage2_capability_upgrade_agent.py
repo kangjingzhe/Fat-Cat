@@ -16,7 +16,6 @@ from capability_upgrade_agent.capability_upgrade_agent import (
     CapabilityUpgradeAgent,
     CapabilityUpgradeConfig,
 )
-from workflow.finish_form_utils import update_form_section
 
 PROMPT_PATH = Path(__file__).with_name("thinking.md")
 STRATEGY_LIBRARY_DIR = PROJECT_ROOT / "strategy_library"
@@ -82,13 +81,6 @@ class Stage2CapabilityUpgradeAgent(CapabilityUpgradeAgent):
         return content or None
 
     async def evaluate_text(self, **kwargs: Any) -> str:
-        finish_form_path = kwargs.pop("finish_form_path", None)
-        finish_form_marker = kwargs.pop("finish_form_marker", "STAGE2C_ANALYSIS")
-        finish_form_header = kwargs.pop(
-            "finish_form_header",
-            "## Stage 2-C: Capability Upgrade Evaluation",
-        )
-
         result_text = await super().evaluate_text(**kwargs)
         patch_markdown = self.last_patch_markdown
         decision_info = self._parse_decision_metadata(result_text)
@@ -123,14 +115,6 @@ class Stage2CapabilityUpgradeAgent(CapabilityUpgradeAgent):
         )
         if "AUTO_APPLY_STATUS:" not in result_text:
             result_text = result_text.rstrip() + "\n\n" + status_line
-
-        if finish_form_path:
-            update_form_section(
-                finish_form_path,
-                marker_name=finish_form_marker,
-                content=result_text,
-                header=finish_form_header,
-            )
 
         return result_text
 
