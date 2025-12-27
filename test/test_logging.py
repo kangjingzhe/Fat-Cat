@@ -83,11 +83,11 @@ def test_log_rotation():
         backup_files = list(log_file.parent.glob(f"{log_file.name}.*"))
         assert len(backup_files) <= 2  # 不超过 backup_count
         
-        print("✅ 所有日志测试通过")
+        print("所有日志测试通过")
 
 if __name__ == "__main__":
     test_logging_configuration()
     test_json_logging()
     test_log_rotation()
-    print("所有测试通过！")
+    print("所有测试通过")
 
